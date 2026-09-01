@@ -14,7 +14,7 @@ const portals = [
   {
     title: "Customer Portal",
     description:
-      "Book vehicle services, manage vehicles and track assistance live.",
+      "Book roadside services, manage vehicles, track your mechanic live, make payments and submit reviews.",
     icon: CarFront,
     badge: "Customer",
     loginPath: "/customer/login",
@@ -25,7 +25,7 @@ const portals = [
   {
     title: "Mechanic Portal",
     description:
-      "Receive assigned jobs, update progress and complete services.",
+      "Manage assigned requests, update service progress and share your live GPS location with customers.",
     icon: Wrench,
     badge: "Mechanic",
     loginPath: "/mechanic/login",
@@ -36,7 +36,7 @@ const portals = [
   {
     title: "Admin Portal",
     description:
-      "Manage bookings, mechanics, customers and business analytics.",
+      "Manage service bookings, view mechanics, assign requests and monitor platform operations.",
     icon: ShieldCheck,
     badge: "Admin",
     loginPath: "/admin/login",
@@ -44,6 +44,13 @@ const portals = [
     buttonText: "Admin Login",
     accent: "purple",
   },
+];
+
+const highlights = [
+  "Live GPS Tracking",
+  "Real-Time Updates",
+  "Secure Payments",
+  "24/7 Assistance",
 ];
 
 export default function Home() {
@@ -91,25 +98,41 @@ export default function Home() {
         <div className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm md:p-10">
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-3xl">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700">
                 <Activity size={16} />
-                Phase 2 Authentication
+                Smart Vehicle Assistance Platform
               </div>
 
               <h1 className="text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
-                Vehicle assistance, managed from one platform.
+                Instant
+                <span className="text-blue-600"> Mechanic</span>
               </h1>
 
+              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-700 md:text-3xl">
+                Help for your vehicle, whenever you need it.
+              </h2>
+
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
-                One platform for customers, mechanics and operations teams.
-                Secure role-based authentication is now active for all three
-                portals.
+                Book trusted mechanic services, track your mechanic live,
+                receive real-time service updates and make secure online
+                payments — all from one platform.
               </p>
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                {highlights.map((highlight) => (
+                  <span
+                    key={highlight}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600"
+                  >
+                    {highlight}
+                  </span>
+                ))}
+              </div>
             </div>
 
             <div className="min-w-52 rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">
-                Backend status
+                Platform Status
               </p>
 
               <div className="mt-2 flex items-center gap-2">
@@ -127,6 +150,10 @@ export default function Home() {
                   {apiStatus}
                 </span>
               </div>
+
+              <p className="mt-2 text-xs leading-5 text-slate-500">
+                Backend connectivity status
+              </p>
             </div>
           </div>
 
@@ -144,7 +171,7 @@ export default function Home() {
               }) => (
                 <article
                   key={title}
-                  className="group rounded-3xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group rounded-3xl border border-slate-200 bg-white p-6 transition duration-300 hover:-translate-y-1 hover:shadow-lg"
                 >
                   <div className="flex items-center justify-between">
                     <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-white">
@@ -160,7 +187,7 @@ export default function Home() {
                     {title}
                   </h2>
 
-                  <p className="mt-2 min-h-20 text-sm leading-6 text-slate-600">
+                  <p className="mt-2 min-h-24 text-sm leading-6 text-slate-600">
                     {description}
                   </p>
 
@@ -171,10 +198,14 @@ export default function Home() {
                     )}`}
                   >
                     {buttonText}
-                    <ArrowRight size={16} />
+
+                    <ArrowRight
+                      size={16}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
                   </Link>
 
-                  {registerPath && (
+                  {registerPath ? (
                     <p className="mt-4 text-sm text-slate-500">
                       New here?{" "}
                       <Link
@@ -184,16 +215,20 @@ export default function Home() {
                         Create account
                       </Link>
                     </p>
-                  )}
-
-                  {!registerPath && (
+                  ) : (
                     <p className="mt-4 text-sm text-slate-500">
-                      Admin accounts are created securely by the system.
+                      Admin access is restricted to authorized accounts.
                     </p>
                   )}
                 </article>
               )
             )}
+          </div>
+
+          <div className="mt-10 border-t border-slate-200 pt-6 text-center">
+            <p className="text-sm text-slate-500">
+              Fast assistance. Live tracking. Secure service.
+            </p>
           </div>
         </div>
       </section>
