@@ -17,6 +17,7 @@ import vehicleRoutes from "./routes/vehicleRoutes.js";
 import serviceRoutes from "./routes/serviceRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import adminBookingRoutes from "./routes/adminBookingRoutes.js";
+import adminFinanceRoutes from "./routes/adminFinanceRoutes.js";
 import mechanicBookingRoutes from "./routes/mechanicBookingRoutes.js";
 import mechanicReviewRoutes from "./routes/mechanicReviewRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
@@ -35,10 +36,10 @@ import {
 } from "./middleware/errorHandler.js";
 
 const app = express();
-
 const server = http.createServer(app);
 
-const PORT = process.env.PORT || 5000;
+const PORT =
+  process.env.PORT || 5000;
 
 const CLIENT_URL =
   process.env.CLIENT_URL ||
@@ -83,10 +84,6 @@ const io = new Server(server, {
   },
 });
 
-/*
-  Every Socket.IO connection must
-  provide a valid JWT.
-*/
 io.use(socketAuth);
 
 io.on("connection", (socket) => {
@@ -103,18 +100,6 @@ io.on("connection", (socket) => {
       "Real-time server connected",
   });
 
-  /*
-    Secure booking room join.
-
-    Customer:
-    only own bookings
-
-    Mechanic:
-    only assigned bookings
-
-    Admin:
-    all bookings
-  */
   socket.on(
     "booking:join",
     async (bookingId) => {
@@ -145,8 +130,7 @@ io.on("connection", (socket) => {
         let allowed = false;
 
         if (
-          socket.user.role ===
-          "admin"
+          socket.user.role === "admin"
         ) {
           allowed = true;
         }
@@ -229,14 +213,11 @@ io.on("connection", (socket) => {
     }
   );
 
-  socket.on(
-    "disconnect",
-    () => {
-      console.log(
-        `Socket disconnected: ${socket.id}`
-      );
-    }
-  );
+  socket.on("disconnect", () => {
+    console.log(
+      `Socket disconnected: ${socket.id}`
+    );
+  });
 });
 
 app.set("io", io);
@@ -249,17 +230,7 @@ app.get("/", (req, res) => {
   });
 });
 
-/*
-  General rate limiter
-*/
-app.use(
-  "/api",
-  apiLimiter
-);
-
-/*
-  API Routes
-*/
+app.use("/api", apiLimiter);
 
 app.use(
   "/api/health",
@@ -293,6 +264,11 @@ app.use(
 );
 
 app.use(
+  "/api/admin/finance",
+  adminFinanceRoutes
+);
+
+app.use(
   "/api/mechanic",
   mechanicBookingRoutes
 );
@@ -312,11 +288,7 @@ app.use(
   reviewRoutes
 );
 
-/*
-  404 + Error Handler
-*/
 app.use(notFound);
-
 app.use(errorHandler);
 
 async function startServer() {

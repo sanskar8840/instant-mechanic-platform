@@ -18,6 +18,7 @@ import MechanicDashboard from "./pages/MechanicDashboard.jsx";
 
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminFinance from "./pages/AdminFinance.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
@@ -128,6 +129,15 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/finance"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminFinance />
           </ProtectedRoute>
         }
       />

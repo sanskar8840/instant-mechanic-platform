@@ -113,6 +113,59 @@ const bookingSchema = new mongoose.Schema(
       default: null,
     },
 
+    /*
+    |--------------------------------------------------------------------------
+    | Financial Settlement
+    |--------------------------------------------------------------------------
+    */
+
+    mechanicSharePercent: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: null,
+    },
+
+    mechanicEarning: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
+    platformGrossProfit: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+
+    paymentGatewayFee: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
+    platformNetProfit: {
+      type: Number,
+      default: null,
+    },
+
+    mechanicPayoutStatus: {
+      type: String,
+      enum: ["Pending", "Paid"],
+      default: "Pending",
+    },
+
+    mechanicPaidAmount: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+
+    mechanicPaidAt: {
+      type: Date,
+      default: null,
+    },
+
     mechanicLocation: {
       latitude: {
         type: Number,
@@ -135,9 +188,26 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-const Booking = mongoose.model(
+bookingSchema.index({
+  customer: 1,
+  createdAt: -1,
+});
+
+bookingSchema.index({
+  mechanic: 1,
+  createdAt: -1,
+});
+
+bookingSchema.index({
+  paymentStatus: 1,
+  paidAt: -1,
+});
+
+bookingSchema.index({
+  mechanicPayoutStatus: 1,
+});
+
+export default mongoose.model(
   "Booking",
   bookingSchema
 );
-
-export default Booking;
