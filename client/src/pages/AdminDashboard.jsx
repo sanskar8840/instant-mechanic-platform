@@ -427,14 +427,30 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-slate-800 bg-slate-900">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-bold">
-              Instant Mechanic
-            </h1>
 
-            <p className="text-sm text-slate-400">
-              Admin Dashboard
-            </p>
+          {/* LOGO + BRAND */}
+
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-slate-700 bg-slate-950 shadow-sm">
+              <img
+                src="/logo.svg"
+                alt="Instant Mechanic Logo"
+                className="h-10 w-10 object-contain"
+              />
+            </div>
+
+            <div>
+              <h1 className="text-lg font-bold leading-tight sm:text-xl">
+                Instant{" "}
+                <span className="text-blue-400">
+                  Mechanic
+                </span>
+              </h1>
+
+              <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">
+                Admin Dashboard
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">

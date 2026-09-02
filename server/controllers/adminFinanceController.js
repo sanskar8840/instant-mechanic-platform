@@ -1,19 +1,29 @@
 import Booking from "../models/Booking.js";
 
 const roundMoney = (value) => {
-  return Math.round(
-    (Number(value || 0) + Number.EPSILON) * 100
-  ) / 100;
+  return (
+    Math.round(
+      (Number(value || 0) +
+        Number.EPSILON) *
+        100
+    ) / 100
+  );
 };
 
 const getFinanceDefaults = () => {
-  const mechanicSharePercent = Number(
-    process.env.MECHANIC_SHARE_PERCENT || 80
-  );
+  const mechanicSharePercent =
+    Number(
+      process.env
+        .MECHANIC_SHARE_PERCENT ||
+        80
+    );
 
-  const paymentGatewayFeePercent = Number(
-    process.env.PAYMENT_GATEWAY_FEE_PERCENT || 0
-  );
+  const paymentGatewayFeePercent =
+    Number(
+      process.env
+        .PAYMENT_GATEWAY_FEE_PERCENT ||
+        0
+    );
 
   return {
     mechanicSharePercent,
@@ -21,9 +31,13 @@ const getFinanceDefaults = () => {
   };
 };
 
-const getBookingFinance = (booking) => {
+const getBookingFinance = (
+  booking
+) => {
   const {
-    mechanicSharePercent: defaultMechanicShare,
+    mechanicSharePercent:
+      defaultMechanicShare,
+
     paymentGatewayFeePercent,
   } = getFinanceDefaults();
 
@@ -39,7 +53,8 @@ const getBookingFinance = (booking) => {
     booking.mechanicEarning ??
     roundMoney(
       amount *
-        (mechanicSharePercent / 100)
+        (mechanicSharePercent /
+          100)
     );
 
   const platformGrossProfit =
@@ -52,7 +67,8 @@ const getBookingFinance = (booking) => {
     booking.paymentGatewayFee ??
     roundMoney(
       amount *
-        (paymentGatewayFeePercent / 100)
+        (paymentGatewayFeePercent /
+          100)
     );
 
   const platformNetProfit =
@@ -64,7 +80,8 @@ const getBookingFinance = (booking) => {
 
   const mechanicPaidAmount =
     roundMoney(
-      booking.mechanicPaidAmount || 0
+      booking.mechanicPaidAmount ||
+        0
     );
 
   const payoutStatus =
@@ -83,365 +100,567 @@ const getBookingFinance = (booking) => {
   };
 };
 
-export const getAdminFinanceSummary = async (
-  req,
-  res,
-  next
-) => {
-  try {
-    const currentYear =
-      new Date().getFullYear();
+const getYearRange = (year) => {
+  const startDate = new Date(
+    Date.UTC(
+      year,
+      0,
+      1,
+      0,
+      0,
+      0
+    )
+  );
 
-    const requestedYear = Number(
-      req.query.year || currentYear
-    );
+  const endDate = new Date(
+    Date.UTC(
+      year + 1,
+      0,
+      1,
+      0,
+      0,
+      0
+    )
+  );
 
-    if (
-      !Number.isInteger(requestedYear) ||
-      requestedYear < 2000 ||
-      requestedYear > 2100
-    ) {
-      res.status(400);
+  return {
+    startDate,
+    endDate,
+  };
+};
 
-      throw new Error(
-        "Invalid year"
-      );
-    }
+export const getAdminFinanceSummary =
+  async (
+    req,
+    res,
+    next
+  ) => {
+    try {
+      const currentYear =
+        new Date().getFullYear();
 
-    const startDate = new Date(
-      Date.UTC(
-        requestedYear,
-        0,
-        1,
-        0,
-        0,
-        0
-      )
-    );
-
-    const endDate = new Date(
-      Date.UTC(
-        requestedYear + 1,
-        0,
-        1,
-        0,
-        0,
-        0
-      )
-    );
-
-    const paidBookings =
-      await Booking.find({
-        paymentStatus: "Paid",
-
-        paidAt: {
-          $gte: startDate,
-          $lt: endDate,
-        },
-      })
-        .populate(
-          "mechanic",
-          "name email"
-        )
-        .select(
-          `
-          bookingId
-          amount
-          paidAt
-          mechanic
-          mechanicSharePercent
-          mechanicEarning
-          platformGrossProfit
-          paymentGatewayFee
-          platformNetProfit
-          mechanicPayoutStatus
-          mechanicPaidAmount
-          mechanicPaidAt
-          `
-        )
-        .sort({
-          paidAt: -1,
-        });
-
-    const monthlyData =
-      Array.from(
-        {
-          length: 12,
-        },
-        (_, index) => ({
-          monthNumber:
-            index + 1,
-
-          month: new Date(
-            2000,
-            index,
-            1
-          ).toLocaleString(
-            "en-US",
-            {
-              month: "short",
-            }
-          ),
-
-          revenue: 0,
-
-          mechanicEarnings: 0,
-
-          grossProfit: 0,
-
-          gatewayFees: 0,
-
-          netProfit: 0,
-
-          bookings: 0,
-        })
-      );
-
-    const mechanicMap =
-      new Map();
-
-    let totalRevenue = 0;
-
-    let totalMechanicEarnings = 0;
-
-    let totalGrossProfit = 0;
-
-    let totalGatewayFees = 0;
-
-    let totalNetProfit = 0;
-
-    let totalPaidToMechanics = 0;
-
-    let totalPendingMechanicPayout = 0;
-
-    let paidPayoutCount = 0;
-
-    let pendingPayoutCount = 0;
-
-    for (
-      const booking of paidBookings
-    ) {
-      const finance =
-        getBookingFinance(
-          booking
-        );
-
-      totalRevenue +=
-        finance.amount;
-
-      totalMechanicEarnings +=
-        finance.mechanicEarning;
-
-      totalGrossProfit +=
-        finance.platformGrossProfit;
-
-      totalGatewayFees +=
-        finance.paymentGatewayFee;
-
-      totalNetProfit +=
-        finance.platformNetProfit;
-
-      totalPaidToMechanics +=
-        finance.mechanicPaidAmount;
-
-      const pendingAmount =
-        roundMoney(
-          Math.max(
-            0,
-            finance.mechanicEarning -
-              finance.mechanicPaidAmount
-          )
+      const requestedYear =
+        Number(
+          req.query.year ||
+            currentYear
         );
 
       if (
-        finance.payoutStatus ===
-        "Paid"
+        !Number.isInteger(
+          requestedYear
+        ) ||
+        requestedYear < 2000 ||
+        requestedYear > 2100
       ) {
-        paidPayoutCount += 1;
-      } else {
-        pendingPayoutCount += 1;
+        res.status(400);
 
-        totalPendingMechanicPayout +=
-          pendingAmount;
+        throw new Error(
+          "Invalid year"
+        );
       }
 
-      if (booking.paidAt) {
-        const monthIndex =
-          new Date(
-            booking.paidAt
-          ).getUTCMonth();
-
-        monthlyData[
-          monthIndex
-        ].revenue +=
-          finance.amount;
-
-        monthlyData[
-          monthIndex
-        ].mechanicEarnings +=
-          finance.mechanicEarning;
-
-        monthlyData[
-          monthIndex
-        ].grossProfit +=
-          finance.platformGrossProfit;
-
-        monthlyData[
-          monthIndex
-        ].gatewayFees +=
-          finance.paymentGatewayFee;
-
-        monthlyData[
-          monthIndex
-        ].netProfit +=
-          finance.platformNetProfit;
-
-        monthlyData[
-          monthIndex
-        ].bookings += 1;
-      }
-
-      if (booking.mechanic) {
-        const mechanicId =
-          booking.mechanic._id.toString();
-
-        if (
-          !mechanicMap.has(
-            mechanicId
-          )
-        ) {
-          mechanicMap.set(
-            mechanicId,
-            {
-              mechanicId,
-
-              name:
-                booking.mechanic
-                  .name,
-
-              email:
-                booking.mechanic
-                  .email,
-
-              completedPaidServices: 0,
-
-              customerRevenue: 0,
-
-              totalEarnings: 0,
-
-              paidAmount: 0,
-
-              pendingAmount: 0,
-            }
-          );
-        }
-
-        const mechanic =
-          mechanicMap.get(
-            mechanicId
-          );
-
-        mechanic.completedPaidServices +=
-          1;
-
-        mechanic.customerRevenue +=
-          finance.amount;
-
-        mechanic.totalEarnings +=
-          finance.mechanicEarning;
-
-        mechanic.paidAmount +=
-          finance.mechanicPaidAmount;
-
-        mechanic.pendingAmount +=
-          pendingAmount;
-      }
-    }
-
-    const roundedMonthlyData =
-      monthlyData.map(
-        (item) => ({
-          ...item,
-
-          revenue: roundMoney(
-            item.revenue
-          ),
-
-          mechanicEarnings:
-            roundMoney(
-              item.mechanicEarnings
-            ),
-
-          grossProfit:
-            roundMoney(
-              item.grossProfit
-            ),
-
-          gatewayFees:
-            roundMoney(
-              item.gatewayFees
-            ),
-
-          netProfit:
-            roundMoney(
-              item.netProfit
-            ),
-        })
+      const {
+        startDate,
+        endDate,
+      } = getYearRange(
+        requestedYear
       );
 
-    const mechanicBreakdown =
-      Array.from(
-        mechanicMap.values()
-      )
-        .map(
-          (mechanic) => ({
-            ...mechanic,
+      /*
+      |--------------------------------------------------------------------------
+      | Completed Services
+      |--------------------------------------------------------------------------
+      |
+      | New bookings:
+      | completedAt is used.
+      |
+      | Old bookings:
+      | completedAt did not exist, so updatedAt is used as a fallback.
+      |
+      */
 
-            customerRevenue:
-              roundMoney(
-                mechanic.customerRevenue
-              ),
+      const completedBookings =
+        await Booking.find({
+          status: "Completed",
 
-            totalEarnings:
-              roundMoney(
-                mechanic.totalEarnings
-              ),
+          $or: [
+            {
+              completedAt: {
+                $gte: startDate,
+                $lt: endDate,
+              },
+            },
 
-            paidAmount:
-              roundMoney(
-                mechanic.paidAmount
-              ),
+            {
+              completedAt: null,
 
-            pendingAmount:
-              roundMoney(
-                mechanic.pendingAmount
-              ),
-          })
-        )
-        .sort(
-          (a, b) =>
-            b.totalEarnings -
-            a.totalEarnings
+              updatedAt: {
+                $gte: startDate,
+                $lt: endDate,
+              },
+            },
+          ],
+        })
+          .populate(
+            "mechanic",
+            "name email"
+          )
+          .select(
+            `
+            bookingId
+            amount
+            status
+            completedAt
+            updatedAt
+            paymentStatus
+            paidAt
+            mechanic
+            mechanicSharePercent
+            mechanicEarning
+            platformGrossProfit
+            paymentGatewayFee
+            platformNetProfit
+            mechanicPayoutStatus
+            mechanicPaidAmount
+            mechanicPaidAt
+            `
+          )
+          .sort({
+            completedAt: -1,
+            updatedAt: -1,
+          });
+
+      /*
+      |--------------------------------------------------------------------------
+      | Paid Services
+      |--------------------------------------------------------------------------
+      |
+      | Revenue and profit are counted only after a successful payment.
+      |
+      */
+
+      const paidBookings =
+        await Booking.find({
+          paymentStatus: "Paid",
+
+          paidAt: {
+            $gte: startDate,
+            $lt: endDate,
+          },
+        })
+          .populate(
+            "mechanic",
+            "name email"
+          )
+          .select(
+            `
+            bookingId
+            amount
+            paidAt
+            mechanic
+            mechanicSharePercent
+            mechanicEarning
+            platformGrossProfit
+            paymentGatewayFee
+            platformNetProfit
+            mechanicPayoutStatus
+            mechanicPaidAmount
+            mechanicPaidAt
+            `
+          )
+          .sort({
+            paidAt: -1,
+          });
+
+      /*
+      |--------------------------------------------------------------------------
+      | Awaiting Customer Payment
+      |--------------------------------------------------------------------------
+      */
+
+      const awaitingPaymentBookings =
+        completedBookings.filter(
+          (booking) =>
+            booking.paymentStatus ===
+              "Pending" ||
+            booking.paymentStatus ===
+              "Failed"
         );
 
-    const recentTransactions =
-      paidBookings
-        .slice(0, 20)
-        .map((booking) => {
-          const finance =
-            getBookingFinance(
-              booking
+      const awaitingPaymentAmount =
+        awaitingPaymentBookings.reduce(
+          (total, booking) =>
+            total +
+            Number(
+              booking.amount || 0
+            ),
+          0
+        );
+
+      const monthlyData =
+        Array.from(
+          {
+            length: 12,
+          },
+
+          (_, index) => ({
+            monthNumber:
+              index + 1,
+
+            month: new Date(
+              2000,
+              index,
+              1
+            ).toLocaleString(
+              "en-US",
+              {
+                month: "short",
+              }
+            ),
+
+            revenue: 0,
+
+            mechanicEarnings: 0,
+
+            grossProfit: 0,
+
+            gatewayFees: 0,
+
+            netProfit: 0,
+
+            bookings: 0,
+          })
+        );
+
+      const mechanicMap =
+        new Map();
+
+      let totalRevenue = 0;
+
+      let totalMechanicEarnings =
+        0;
+
+      let totalGrossProfit = 0;
+
+      let totalGatewayFees = 0;
+
+      let totalNetProfit = 0;
+
+      let totalPaidToMechanics =
+        0;
+
+      let totalPendingMechanicPayout =
+        0;
+
+      let paidPayoutCount = 0;
+
+      let pendingPayoutCount = 0;
+
+      for (
+        const booking of paidBookings
+      ) {
+        const finance =
+          getBookingFinance(
+            booking
+          );
+
+        totalRevenue +=
+          finance.amount;
+
+        totalMechanicEarnings +=
+          finance.mechanicEarning;
+
+        totalGrossProfit +=
+          finance.platformGrossProfit;
+
+        totalGatewayFees +=
+          finance.paymentGatewayFee;
+
+        totalNetProfit +=
+          finance.platformNetProfit;
+
+        totalPaidToMechanics +=
+          finance.mechanicPaidAmount;
+
+        const pendingAmount =
+          roundMoney(
+            Math.max(
+              0,
+
+              finance.mechanicEarning -
+                finance.mechanicPaidAmount
+            )
+          );
+
+        if (
+          finance.payoutStatus ===
+          "Paid"
+        ) {
+          paidPayoutCount += 1;
+        } else {
+          pendingPayoutCount +=
+            1;
+
+          totalPendingMechanicPayout +=
+            pendingAmount;
+        }
+
+        if (booking.paidAt) {
+          const monthIndex =
+            new Date(
+              booking.paidAt
+            ).getUTCMonth();
+
+          monthlyData[
+            monthIndex
+          ].revenue +=
+            finance.amount;
+
+          monthlyData[
+            monthIndex
+          ].mechanicEarnings +=
+            finance.mechanicEarning;
+
+          monthlyData[
+            monthIndex
+          ].grossProfit +=
+            finance.platformGrossProfit;
+
+          monthlyData[
+            monthIndex
+          ].gatewayFees +=
+            finance.paymentGatewayFee;
+
+          monthlyData[
+            monthIndex
+          ].netProfit +=
+            finance.platformNetProfit;
+
+          monthlyData[
+            monthIndex
+          ].bookings += 1;
+        }
+
+        if (booking.mechanic) {
+          const mechanicId =
+            booking.mechanic._id.toString();
+
+          if (
+            !mechanicMap.has(
+              mechanicId
+            )
+          ) {
+            mechanicMap.set(
+              mechanicId,
+              {
+                mechanicId,
+
+                name:
+                  booking.mechanic
+                    .name,
+
+                email:
+                  booking.mechanic
+                    .email,
+
+                completedPaidServices: 0,
+
+                customerRevenue: 0,
+
+                totalEarnings: 0,
+
+                paidAmount: 0,
+
+                pendingAmount: 0,
+              }
+            );
+          }
+
+          const mechanic =
+            mechanicMap.get(
+              mechanicId
             );
 
-          return {
+          mechanic.completedPaidServices +=
+            1;
+
+          mechanic.customerRevenue +=
+            finance.amount;
+
+          mechanic.totalEarnings +=
+            finance.mechanicEarning;
+
+          mechanic.paidAmount +=
+            finance.mechanicPaidAmount;
+
+          mechanic.pendingAmount +=
+            pendingAmount;
+        }
+      }
+
+      const roundedMonthlyData =
+        monthlyData.map(
+          (item) => ({
+            ...item,
+
+            revenue:
+              roundMoney(
+                item.revenue
+              ),
+
+            mechanicEarnings:
+              roundMoney(
+                item.mechanicEarnings
+              ),
+
+            grossProfit:
+              roundMoney(
+                item.grossProfit
+              ),
+
+            gatewayFees:
+              roundMoney(
+                item.gatewayFees
+              ),
+
+            netProfit:
+              roundMoney(
+                item.netProfit
+              ),
+          })
+        );
+
+      const mechanicBreakdown =
+        Array.from(
+          mechanicMap.values()
+        )
+          .map(
+            (mechanic) => ({
+              ...mechanic,
+
+              customerRevenue:
+                roundMoney(
+                  mechanic.customerRevenue
+                ),
+
+              totalEarnings:
+                roundMoney(
+                  mechanic.totalEarnings
+                ),
+
+              paidAmount:
+                roundMoney(
+                  mechanic.paidAmount
+                ),
+
+              pendingAmount:
+                roundMoney(
+                  mechanic.pendingAmount
+                ),
+            })
+          )
+          .sort(
+            (a, b) =>
+              b.pendingAmount -
+                a.pendingAmount ||
+              b.totalEarnings -
+                a.totalEarnings
+          );
+
+      const recentTransactions =
+        paidBookings
+          .slice(0, 20)
+          .map(
+            (booking) => {
+              const finance =
+                getBookingFinance(
+                  booking
+                );
+
+              return {
+                id:
+                  booking._id.toString(),
+
+                bookingId:
+                  booking.bookingId,
+
+                paidAt:
+                  booking.paidAt,
+
+                mechanic:
+                  booking.mechanic
+                    ? {
+                        id:
+                          booking.mechanic._id.toString(),
+
+                        name:
+                          booking.mechanic.name,
+
+                        email:
+                          booking.mechanic.email,
+                      }
+                    : null,
+
+                customerPaid:
+                  roundMoney(
+                    finance.amount
+                  ),
+
+                mechanicEarning:
+                  roundMoney(
+                    finance.mechanicEarning
+                  ),
+
+                platformGrossProfit:
+                  roundMoney(
+                    finance.platformGrossProfit
+                  ),
+
+                gatewayFee:
+                  roundMoney(
+                    finance.paymentGatewayFee
+                  ),
+
+                platformNetProfit:
+                  roundMoney(
+                    finance.platformNetProfit
+                  ),
+
+                mechanicPaidAmount:
+                  roundMoney(
+                    finance.mechanicPaidAmount
+                  ),
+
+                payoutStatus:
+                  finance.payoutStatus,
+
+                mechanicPaidAt:
+                  booking.mechanicPaidAt ||
+                  null,
+              };
+            }
+          );
+
+      const awaitingPayments =
+        awaitingPaymentBookings.map(
+          (booking) => ({
             id:
               booking._id.toString(),
 
             bookingId:
               booking.bookingId,
 
-            paidAt:
-              booking.paidAt,
+            amount:
+              roundMoney(
+                booking.amount
+              ),
+
+            paymentStatus:
+              booking.paymentStatus,
+
+            completedAt:
+              booking.completedAt ||
+              booking.updatedAt,
 
             mechanic:
               booking.mechanic
@@ -456,106 +675,102 @@ export const getAdminFinanceSummary = async (
                       booking.mechanic.email,
                   }
                 : null,
+          })
+        );
 
-            customerPaid:
-              roundMoney(
-                finance.amount
-              ),
+      res.status(200).json({
+        success: true,
 
-            mechanicEarning:
-              roundMoney(
-                finance.mechanicEarning
-              ),
+        year:
+          requestedYear,
 
-            platformGrossProfit:
-              roundMoney(
-                finance.platformGrossProfit
-              ),
+        summary: {
+          /*
+          |--------------------------------
+          | Service Payment Overview
+          |--------------------------------
+          */
 
-            gatewayFee:
-              roundMoney(
-                finance.paymentGatewayFee
-              ),
+          completedServices:
+            completedBookings.length,
 
-            platformNetProfit:
-              roundMoney(
-                finance.platformNetProfit
-              ),
+          paidServices:
+            paidBookings.length,
 
-            mechanicPaidAmount:
-              roundMoney(
-                finance.mechanicPaidAmount
-              ),
+          awaitingPaymentServices:
+            awaitingPaymentBookings.length,
 
-            payoutStatus:
-              finance.payoutStatus,
+          awaitingPaymentAmount:
+            roundMoney(
+              awaitingPaymentAmount
+            ),
 
-            mechanicPaidAt:
-              booking.mechanicPaidAt ||
-              null,
-          };
-        });
+          /*
+          |--------------------------------
+          | Revenue
+          |--------------------------------
+          */
 
-    res.status(200).json({
-      success: true,
+          totalRevenue:
+            roundMoney(
+              totalRevenue
+            ),
 
-      year: requestedYear,
+          totalMechanicEarnings:
+            roundMoney(
+              totalMechanicEarnings
+            ),
 
-      summary: {
-        totalRevenue:
-          roundMoney(
-            totalRevenue
-          ),
+          totalPaidToMechanics:
+            roundMoney(
+              totalPaidToMechanics
+            ),
 
-        totalMechanicEarnings:
-          roundMoney(
-            totalMechanicEarnings
-          ),
+          totalPendingMechanicPayout:
+            roundMoney(
+              totalPendingMechanicPayout
+            ),
 
-        totalPaidToMechanics:
-          roundMoney(
-            totalPaidToMechanics
-          ),
+          platformGrossProfit:
+            roundMoney(
+              totalGrossProfit
+            ),
 
-        totalPendingMechanicPayout:
-          roundMoney(
-            totalPendingMechanicPayout
-          ),
+          paymentGatewayFees:
+            roundMoney(
+              totalGatewayFees
+            ),
 
-        platformGrossProfit:
-          roundMoney(
-            totalGrossProfit
-          ),
+          platformNetProfit:
+            roundMoney(
+              totalNetProfit
+            ),
 
-        paymentGatewayFees:
-          roundMoney(
-            totalGatewayFees
-          ),
+          /*
+          | Legacy frontend compatibility
+          */
 
-        platformNetProfit:
-          roundMoney(
-            totalNetProfit
-          ),
+          paidBookings:
+            paidBookings.length,
 
-        paidBookings:
-          paidBookings.length,
+          paidPayoutCount,
 
-        paidPayoutCount,
+          pendingPayoutCount,
+        },
 
-        pendingPayoutCount,
-      },
+        monthlyData:
+          roundedMonthlyData,
 
-      monthlyData:
-        roundedMonthlyData,
+        mechanicBreakdown,
 
-      mechanicBreakdown,
+        recentTransactions,
 
-      recentTransactions,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+        awaitingPayments,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 
 export const markMechanicPayoutPaid =
   async (

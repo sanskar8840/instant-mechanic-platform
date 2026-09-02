@@ -96,6 +96,32 @@ export default function Home() {
     <main className="min-h-screen bg-slate-50">
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-16">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-7 shadow-sm md:p-10">
+
+          {/* BRAND HEADER */}
+
+          <div className="mb-10 flex items-center gap-4 border-b border-slate-200 pb-6">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 shadow-sm">
+              <img
+                src="/logo.svg"
+                alt="Instant Mechanic Logo"
+                className="h-11 w-11 object-contain"
+              />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-slate-950 md:text-2xl">
+                Instant{" "}
+                <span className="text-blue-600">
+                  Mechanic
+                </span>
+              </h2>
+
+              <p className="mt-0.5 text-xs font-medium text-slate-500 md:text-sm">
+                Smart Roadside Assistance
+              </p>
+            </div>
+          </div>
+
           <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700">
@@ -103,12 +129,23 @@ export default function Home() {
                 Smart Vehicle Assistance Platform
               </div>
 
-              <h1 className="text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
-                Instant
-                <span className="text-blue-600"> Mechanic</span>
-              </h1>
+              <div className="flex items-center gap-4">
+                <img
+                  src="/logo.svg"
+                  alt="Instant Mechanic"
+                  className="hidden h-20 w-20 rounded-2xl object-contain shadow-sm md:block"
+                />
 
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-700 md:text-3xl">
+                <h1 className="text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
+                  Instant
+                  <span className="text-blue-600">
+                    {" "}
+                    Mechanic
+                  </span>
+                </h1>
+              </div>
+
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-700 md:text-3xl">
                 Help for your vehicle, whenever you need it.
               </h2>
 
@@ -225,7 +262,13 @@ export default function Home() {
             )}
           </div>
 
-          <div className="mt-10 border-t border-slate-200 pt-6 text-center">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 border-t border-slate-200 pt-6 sm:flex-row">
+            <img
+              src="/logo.svg"
+              alt="Instant Mechanic Logo"
+              className="h-7 w-7 object-contain"
+            />
+
             <p className="text-sm text-slate-500">
               Fast assistance. Live tracking. Secure service.
             </p>

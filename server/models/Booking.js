@@ -76,6 +76,11 @@ const bookingSchema = new mongoose.Schema(
       default: "Pending",
     },
 
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+
     amount: {
       type: Number,
       required: true,
@@ -112,12 +117,6 @@ const bookingSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-
-    /*
-    |--------------------------------------------------------------------------
-    | Financial Settlement
-    |--------------------------------------------------------------------------
-    */
 
     mechanicSharePercent: {
       type: Number,
@@ -196,6 +195,11 @@ bookingSchema.index({
 bookingSchema.index({
   mechanic: 1,
   createdAt: -1,
+});
+
+bookingSchema.index({
+  status: 1,
+  completedAt: -1,
 });
 
 bookingSchema.index({

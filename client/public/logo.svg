@@ -1,0 +1,71 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="120" fill="#0F172A"/>
+
+  <circle
+    cx="256"
+    cy="235"
+    r="150"
+    stroke="#3B82F6"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-dasharray="720 250"
+  />
+
+  <path
+    d="M168 245L195 184C202 168 217 158 235 158H277C295 158 310 168 317 184L344 245"
+    stroke="white"
+    stroke-width="25"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <rect
+    x="150"
+    y="230"
+    width="212"
+    height="105"
+    rx="32"
+    fill="white"
+  />
+
+  <rect
+    x="175"
+    y="256"
+    width="44"
+    height="24"
+    rx="12"
+    fill="#3B82F6"
+  />
+
+  <rect
+    x="293"
+    y="256"
+    width="44"
+    height="24"
+    rx="12"
+    fill="#3B82F6"
+  />
+
+  <rect
+    x="180"
+    y="315"
+    width="38"
+    height="42"
+    rx="12"
+    fill="#3B82F6"
+  />
+
+  <rect
+    x="294"
+    y="315"
+    width="38"
+    height="42"
+    rx="12"
+    fill="#3B82F6"
+  />
+
+  <path
+    d="M329 326C349 306 380 304 402 320L371 351L389 369L420 338C436 360 434 391 414 411C395 430 366 433 344 419L287 476C273 490 250 490 236 476C222 462 222 439 236 425L293 368C279 346 282 317 301 298"
+    fill="#10B981"
+  />
+</svg>

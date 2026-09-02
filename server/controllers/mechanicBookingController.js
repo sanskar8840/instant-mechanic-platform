@@ -9,7 +9,10 @@ export const getMyAssignedBookings = async (
     const bookings = await Booking.find({
       mechanic: req.user.id,
     })
-      .populate("customer", "name email phone")
+      .populate(
+        "customer",
+        "name email phone"
+      )
       .populate("vehicle")
       .populate("service")
       .sort({ createdAt: -1 });
@@ -34,7 +37,10 @@ export const getMechanicBookingById = async (
       _id: req.params.id,
       mechanic: req.user.id,
     })
-      .populate("customer", "name email phone")
+      .populate(
+        "customer",
+        "name email phone"
+      )
       .populate("vehicle")
       .populate("service");
 
@@ -72,6 +78,7 @@ export const updateBookingStatus = async (
 
     if (booking.status === "Cancelled") {
       res.status(400);
+
       throw new Error(
         "Cancelled booking cannot be updated"
       );
@@ -79,6 +86,7 @@ export const updateBookingStatus = async (
 
     if (booking.status === "Completed") {
       res.status(400);
+
       throw new Error(
         "Completed booking cannot be updated"
       );
@@ -97,6 +105,7 @@ export const updateBookingStatus = async (
 
     if (!expectedStatus) {
       res.status(400);
+
       throw new Error(
         `Status cannot be updated from ${booking.status}`
       );
@@ -104,6 +113,7 @@ export const updateBookingStatus = async (
 
     if (status !== expectedStatus) {
       res.status(400);
+
       throw new Error(
         `Next allowed status is ${expectedStatus}`
       );
@@ -111,10 +121,16 @@ export const updateBookingStatus = async (
 
     booking.status = status;
 
+    if (status === "Completed") {
+      booking.completedAt = new Date();
+    }
+
     await booking.save();
 
     const updatedBooking =
-      await Booking.findById(booking._id)
+      await Booking.findById(
+        booking._id
+      )
         .populate(
           "customer",
           "name email phone"
@@ -131,17 +147,32 @@ export const updateBookingStatus = async (
     if (io) {
       io.to(
         `booking:${booking._id.toString()}`
-      ).emit("booking:status-updated", {
-        bookingId: booking._id.toString(),
-        status: updatedBooking.status,
-        booking: updatedBooking,
-      });
+      ).emit(
+        "booking:status-updated",
+        {
+          bookingId:
+            booking._id.toString(),
+
+          status:
+            updatedBooking.status,
+
+          completedAt:
+            updatedBooking.completedAt,
+
+          booking:
+            updatedBooking,
+        }
+      );
     }
 
     res.status(200).json({
       success: true,
-      message: `Booking status updated to ${status}`,
-      booking: updatedBooking,
+
+      message:
+        `Booking status updated to ${status}`,
+
+      booking:
+        updatedBooking,
     });
   } catch (error) {
     next(error);
@@ -164,6 +195,7 @@ export const updateMechanicLocation = async (
       longitude === undefined
     ) {
       res.status(400);
+
       throw new Error(
         "Latitude and longitude are required"
       );
@@ -181,6 +213,7 @@ export const updateMechanicLocation = async (
       lng > 180
     ) {
       res.status(400);
+
       throw new Error(
         "Invalid latitude or longitude"
       );
@@ -209,6 +242,7 @@ export const updateMechanicLocation = async (
       )
     ) {
       res.status(400);
+
       throw new Error(
         "Location sharing is not available for this booking status"
       );
@@ -233,9 +267,11 @@ export const updateMechanicLocation = async (
           bookingId:
             booking._id.toString(),
 
-          latitude: lat,
+          latitude:
+            lat,
 
-          longitude: lng,
+          longitude:
+            lng,
 
           updatedAt:
             booking.mechanicLocation
@@ -246,6 +282,7 @@ export const updateMechanicLocation = async (
 
     res.status(200).json({
       success: true,
+
       message:
         "Mechanic location updated successfully",
 
