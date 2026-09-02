@@ -17,6 +17,7 @@ import {
   BadgeCheck,
   ReceiptIndianRupee,
   CircleDollarSign,
+  X,
 } from "lucide-react";
 
 import {
@@ -102,9 +103,7 @@ export default function AdminFinance() {
     navigate("/admin/login");
   };
 
-  const formatCurrency = (
-    value
-  ) => {
+  const formatCurrency = (value) => {
     return new Intl.NumberFormat(
       "en-IN",
       {
@@ -144,9 +143,7 @@ export default function AdminFinance() {
     return `₹${number}`;
   };
 
-  const formatDate = (
-    value
-  ) => {
+  const formatDate = (value) => {
     if (!value) {
       return "—";
     }
@@ -191,14 +188,10 @@ export default function AdminFinance() {
             return (
               mechanic.name
                 ?.toLowerCase()
-                .includes(
-                  term
-                ) ||
+                .includes(term) ||
               mechanic.email
                 ?.toLowerCase()
-                .includes(
-                  term
-                )
+                .includes(term)
             );
           }
         )
@@ -381,6 +374,7 @@ export default function AdminFinance() {
               <ArrowLeft
                 size={18}
               />
+
               Back to Admin
               Dashboard
             </button>
@@ -633,8 +627,6 @@ export default function AdminFinance() {
             </div>
           </div>
         </div>
-
-        {/* Professional Chart */}
 
         <section className="mt-10 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
           <div className="flex flex-col gap-5 border-b border-slate-800 p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -913,8 +905,6 @@ export default function AdminFinance() {
           </div>
         </section>
 
-        {/* Mechanic Profiles */}
-
         <section className="mt-10">
           <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -1014,20 +1004,18 @@ export default function AdminFinance() {
                         {hasPending ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">
                             <Clock3
-                              size={
-                                14
-                              }
+                              size={14}
                             />
+
                             Payment
                             Pending
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
                             <CheckCircle2
-                              size={
-                                14
-                              }
+                              size={14}
                             />
+
                             Settled
                           </span>
                         )}
@@ -1043,6 +1031,7 @@ export default function AdminFinance() {
                         <Mail
                           size={15}
                         />
+
                         {
                           mechanic.email
                         }
@@ -1100,12 +1089,13 @@ export default function AdminFinance() {
                       </div>
 
                       <button
+                        type="button"
                         onClick={() =>
                           setSelectedMechanicId(
                             mechanic.mechanicId
                           )
                         }
-                        className="mt-5 w-full rounded-xl bg-purple-600 px-4 py-3 font-semibold transition hover:bg-purple-500"
+                        className="mt-5 w-full cursor-pointer rounded-xl bg-purple-600 px-4 py-3 font-semibold transition hover:bg-purple-500"
                       >
                         View Financial
                         Profile
@@ -1117,209 +1107,275 @@ export default function AdminFinance() {
             </div>
           )}
         </section>
+      </main>
 
-        {/* Selected Mechanic */}
+      {selectedMechanic && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() =>
+            setSelectedMechanicId("")
+          }
+        >
+          <div
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+            className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-purple-500/30 bg-slate-900 shadow-2xl"
+          >
+            <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-800 bg-slate-900 p-6">
+              <div className="flex items-start gap-4">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-purple-500/10 text-purple-400">
+                  <UserRound
+                    size={24}
+                  />
+                </div>
 
-        {selectedMechanic && (
-          <section className="mt-10 rounded-2xl border border-purple-500/30 bg-slate-900 p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-purple-400">
-                  Mechanic
-                  Financial Profile
-                </p>
+                <div>
+                  <p className="text-sm font-semibold text-purple-400">
+                    Mechanic
+                    Financial
+                    Profile
+                  </p>
 
-                <h3 className="mt-2 text-2xl font-bold">
-                  {
-                    selectedMechanic.name
-                  }
-                </h3>
+                  <h3 className="mt-1 text-2xl font-bold">
+                    {
+                      selectedMechanic.name
+                    }
+                  </h3>
 
-                <p className="mt-1 text-sm text-slate-400">
-                  {
-                    selectedMechanic.email
-                  }
-                </p>
+                  <p className="mt-1 flex items-center gap-2 text-sm text-slate-400">
+                    <Mail
+                      size={15}
+                    />
+
+                    {
+                      selectedMechanic.email
+                    }
+                  </p>
+                </div>
               </div>
 
               <button
+                type="button"
                 onClick={() =>
                   setSelectedMechanicId(
                     ""
                   )
                 }
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-800"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-700 text-slate-400 transition hover:bg-slate-800 hover:text-white"
               >
-                Close Profile
+                <X size={20} />
               </button>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-xl bg-slate-950 p-4">
-                <p className="text-xs text-slate-500">
-                  Customer Revenue
-                </p>
+            <div className="p-6">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                  <p className="text-xs text-slate-500">
+                    Services
+                    Completed
+                  </p>
 
-                <p className="mt-2 text-lg font-bold text-blue-400">
-                  {formatCurrency(
-                    selectedMechanic.customerRevenue
-                  )}
-                </p>
+                  <p className="mt-2 text-xl font-bold">
+                    {
+                      selectedMechanic.completedPaidServices
+                    }
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-blue-500/20 bg-slate-950 p-4">
+                  <p className="text-xs text-slate-500">
+                    Customer
+                    Revenue
+                  </p>
+
+                  <p className="mt-2 text-xl font-bold text-blue-400">
+                    {formatCurrency(
+                      selectedMechanic.customerRevenue
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-emerald-500/20 bg-slate-950 p-4">
+                  <p className="text-xs text-slate-500">
+                    Amount Paid
+                  </p>
+
+                  <p className="mt-2 text-xl font-bold text-emerald-400">
+                    {formatCurrency(
+                      selectedMechanic.paidAmount
+                    )}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-amber-500/20 bg-slate-950 p-4">
+                  <p className="text-xs text-slate-500">
+                    Pending
+                    Payout
+                  </p>
+
+                  <p className="mt-2 text-xl font-bold text-amber-400">
+                    {formatCurrency(
+                      selectedMechanic.pendingAmount
+                    )}
+                  </p>
+                </div>
               </div>
 
-              <div className="rounded-xl bg-slate-950 p-4">
-                <p className="text-xs text-slate-500">
-                  Total Earnings
+              <div className="mt-6 rounded-2xl border border-purple-500/20 bg-purple-500/5 p-5">
+                <p className="text-sm text-slate-400">
+                  Total Mechanic
+                  Earnings
                 </p>
 
-                <p className="mt-2 text-lg font-bold">
+                <p className="mt-2 text-3xl font-bold">
                   {formatCurrency(
                     selectedMechanic.totalEarnings
                   )}
                 </p>
               </div>
 
-              <div className="rounded-xl bg-slate-950 p-4">
-                <p className="text-xs text-slate-500">
-                  Paid
-                </p>
+              <div className="mt-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xl font-bold">
+                      Payment
+                      Transactions
+                    </h4>
 
-                <p className="mt-2 text-lg font-bold text-emerald-400">
-                  {formatCurrency(
-                    selectedMechanic.paidAmount
-                  )}
-                </p>
-              </div>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Service-wise
+                      earning and
+                      settlement
+                      history.
+                    </p>
+                  </div>
 
-              <div className="rounded-xl bg-slate-950 p-4">
-                <p className="text-xs text-slate-500">
-                  Pending
-                </p>
+                  <span className="rounded-full bg-slate-950 px-3 py-1 text-sm text-slate-400">
+                    {
+                      mechanicTransactions.length
+                    }{" "}
+                    transactions
+                  </span>
+                </div>
 
-                <p className="mt-2 text-lg font-bold text-amber-400">
-                  {formatCurrency(
-                    selectedMechanic.pendingAmount
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <h4 className="mt-8 text-lg font-bold">
-              Payment
-              Transactions
-            </h4>
-
-            <div className="mt-4 space-y-3">
-              {mechanicTransactions.length ===
-              0 ? (
-                <p className="rounded-xl bg-slate-950 p-5 text-sm text-slate-400">
-                  No transactions
-                  available for this
-                  mechanic.
-                </p>
-              ) : (
-                mechanicTransactions.map(
-                  (
-                    transaction
-                  ) => (
-                    <div
-                      key={
-                        transaction.id
-                      }
-                      className="flex flex-col gap-4 rounded-xl bg-slate-950 p-5 lg:flex-row lg:items-center lg:justify-between"
-                    >
-                      <div>
-                        <p className="text-xs text-slate-500">
-                          Booking
-                        </p>
-
-                        <p className="font-semibold">
-                          {
-                            transaction.bookingId
-                          }
-                        </p>
-
-                        <p className="mt-1 text-xs text-slate-500">
-                          {formatDate(
-                            transaction.paidAt
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">
-                          Customer
-                          Paid
-                        </p>
-
-                        <p className="font-bold text-blue-400">
-                          {formatCurrency(
-                            transaction.customerPaid
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-500">
-                          Mechanic
-                          Earned
-                        </p>
-
-                        <p className="font-bold">
-                          {formatCurrency(
-                            transaction.mechanicEarning
-                          )}
-                        </p>
-                      </div>
-
-                      <div>
-                        {transaction.payoutStatus ===
-                        "Pending" ? (
-                          <button
-                            onClick={() =>
-                              handleMarkPaid(
-                                transaction
-                              )
-                            }
-                            disabled={
-                              payingId ===
-                              transaction.id
-                            }
-                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold transition hover:bg-emerald-500 disabled:opacity-60"
-                          >
-                            <BadgeCheck
-                              size={
-                                17
-                              }
-                            />
-
-                            {payingId ===
-                            transaction.id
-                              ? "Updating..."
-                              : "Mark as Paid"}
-                          </button>
-                        ) : (
-                          <div>
-                            <p className="font-semibold text-emerald-400">
-                              Paid
-                            </p>
-
-                            <p className="mt-1 text-xs text-slate-500">
-                              {formatDate(
-                                transaction.mechanicPaidAt
-                              )}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                <div className="mt-5 space-y-4">
+                  {mechanicTransactions.length ===
+                  0 ? (
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-8 text-center text-slate-400">
+                      No payment
+                      transactions
+                      available for
+                      this mechanic.
                     </div>
-                  )
-                )
-              )}
+                  ) : (
+                    mechanicTransactions.map(
+                      (
+                        transaction
+                      ) => (
+                        <div
+                          key={
+                            transaction.id
+                          }
+                          className="rounded-xl border border-slate-800 bg-slate-950 p-5"
+                        >
+                          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4 xl:items-center">
+                            <div>
+                              <p className="text-xs text-slate-500">
+                                Booking
+                                ID
+                              </p>
+
+                              <p className="mt-1 font-semibold">
+                                {
+                                  transaction.bookingId
+                                }
+                              </p>
+
+                              <p className="mt-1 text-xs text-slate-500">
+                                {formatDate(
+                                  transaction.paidAt
+                                )}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-500">
+                                Customer
+                                Paid
+                              </p>
+
+                              <p className="mt-1 font-bold text-blue-400">
+                                {formatCurrency(
+                                  transaction.customerPaid
+                                )}
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-xs text-slate-500">
+                                Mechanic
+                                Earned
+                              </p>
+
+                              <p className="mt-1 font-bold">
+                                {formatCurrency(
+                                  transaction.mechanicEarning
+                                )}
+                              </p>
+                            </div>
+
+                            <div>
+                              {transaction.payoutStatus ===
+                              "Pending" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleMarkPaid(
+                                      transaction
+                                    )
+                                  }
+                                  disabled={
+                                    payingId ===
+                                    transaction.id
+                                  }
+                                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 font-semibold transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  <BadgeCheck
+                                    size={17}
+                                  />
+
+                                  {payingId ===
+                                  transaction.id
+                                    ? "Updating..."
+                                    : "Mark as Paid"}
+                                </button>
+                              ) : (
+                                <div className="rounded-lg bg-emerald-500/10 px-4 py-3">
+                                  <p className="font-semibold text-emerald-400">
+                                    Payment
+                                    Settled
+                                  </p>
+
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    {formatDate(
+                                      transaction.mechanicPaidAt
+                                    )}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )
+                  )}
+                </div>
+              </div>
             </div>
-          </section>
-        )}
-      </main>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
