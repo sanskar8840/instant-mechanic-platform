@@ -1,62 +1,56 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import {
-  ClipboardList,
-  Clock3,
-  UserRoundCheck,
+  ArrowLeft,
   CheckCircle2,
-  CarFront,
-  MapPin,
-  Wrench,
+  Clock3,
+  CreditCard,
+  IndianRupee,
   TrendingUp,
-  ArrowRight,
-  WalletCards,
-  UserPlus,
   Users,
+  WalletCards,
+  Wrench,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-export default function AdminDashboard() {
+export default function AdminFinance() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const [bookings, setBookings] = useState([]);
-  const [mechanics, setMechanics] = useState([]);
+  const currentYear = new Date().getFullYear();
 
-  const [selectedMechanics, setSelectedMechanics] =
-    useState({});
-
+  const [year, setYear] = useState(currentYear);
+  const [financeData, setFinanceData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [assigningId, setAssigningId] = useState("");
   const [error, setError] = useState("");
+  const [payingBookingId, setPayingBookingId] = useState("");
 
-  const loadDashboard = async () => {
+  const loadFinance = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const [
-        bookingResponse,
-        mechanicResponse,
-      ] = await Promise.all([
-        api.get("/admin/bookings"),
-        api.get("/admin/mechanics"),
-      ]);
-
-      setBookings(
-        bookingResponse.data.bookings || []
+      const response = await api.get(
+        `/admin/finance/summary?year=${year}`
       );
 
-      setMechanics(
-        mechanicResponse.data.mechanics || []
-      );
+      setFinanceData(response.data);
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Unable to load admin dashboard"
+          "Unable to load financial analytics"
       );
     } finally {
       setLoading(false);
@@ -64,65 +58,40 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    loadDashboard();
-  }, []);
+    loadFinance();
+  }, [year]);
 
   const handleLogout = () => {
     logout();
     navigate("/admin/login");
   };
 
-  const handleMechanicChange = (
-    bookingId,
-    mechanicId
-  ) => {
-    setSelectedMechanics((current) => ({
-      ...current,
-      [bookingId]: mechanicId,
-    }));
-  };
+  const handleMarkPayoutPaid = async (bookingId) => {
+    const confirmed = window.confirm(
+      "Mark this mechanic payout as paid?"
+    );
 
-  const handleAssignMechanic = async (
-    bookingId
-  ) => {
-    const mechanicId =
-      selectedMechanics[bookingId];
-
-    if (!mechanicId) {
-      alert("Please select a mechanic first");
+    if (!confirmed) {
       return;
     }
 
     try {
-      setAssigningId(bookingId);
+      setPayingBookingId(bookingId);
 
       await api.patch(
-        `/admin/bookings/${bookingId}/assign`,
-        {
-          mechanicId,
-        }
+        `/admin/finance/bookings/${bookingId}/payout-paid`
       );
 
-      await loadDashboard();
+      await loadFinance();
 
-      setSelectedMechanics((current) => {
-        const updated = { ...current };
-
-        delete updated[bookingId];
-
-        return updated;
-      });
-
-      alert(
-        "Mechanic assigned successfully"
-      );
+      alert("Mechanic payout marked as paid");
     } catch (err) {
       alert(
         err.response?.data?.message ||
-          "Unable to assign mechanic"
+          "Unable to update mechanic payout"
       );
     } finally {
-      setAssigningId("");
+      setPayingBookingId("");
     }
   };
 
@@ -134,304 +103,34 @@ export default function AdminDashboard() {
     }).format(Number(value || 0));
   };
 
-  const totalBookings = bookings.length;
-
-  const pendingBookings = bookings.filter(
-    (booking) =>
-      booking.status === "Pending"
-  ).length;
-
-  const activeBookings = bookings.filter(
-    (booking) =>
-      booking.status === "Assigned" ||
-      booking.status === "Accepted" ||
-      booking.status === "On The Way" ||
-      booking.status === "Arrived" ||
-      booking.status === "In Progress"
-  ).length;
-
-  const completedBookings = bookings.filter(
-    (booking) =>
-      booking.status === "Completed"
-  ).length;
-
-  const unassignedBookings = bookings.filter(
-    (booking) =>
-      !booking.mechanic &&
-      booking.status !== "Cancelled"
-  );
-
-  const assignedBookings = bookings.filter(
-    (booking) =>
-      Boolean(booking.mechanic)
-  );
-
-  const cancelledBookings = bookings.filter(
-    (booking) =>
-      booking.status === "Cancelled" &&
-      !booking.mechanic
-  );
-
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case "Pending":
-        return "bg-amber-500/10 text-amber-400";
-
-      case "Assigned":
-        return "bg-purple-500/10 text-purple-400";
-
-      case "Accepted":
-        return "bg-blue-500/10 text-blue-400";
-
-      case "On The Way":
-        return "bg-cyan-500/10 text-cyan-400";
-
-      case "Arrived":
-        return "bg-indigo-500/10 text-indigo-400";
-
-      case "In Progress":
-        return "bg-orange-500/10 text-orange-400";
-
-      case "Completed":
-        return "bg-emerald-500/10 text-emerald-400";
-
-      case "Cancelled":
-        return "bg-red-500/10 text-red-400";
-
-      default:
-        return "bg-slate-700 text-slate-300";
+  const formatDate = (value) => {
+    if (!value) {
+      return "-";
     }
+
+    return new Date(value).toLocaleString("en-IN");
   };
 
-  const renderBookingCard = (
-    booking,
-    allowAssignment = true
-  ) => {
-    return (
-      <div
-        key={booking._id}
-        className="rounded-2xl border border-slate-800 bg-slate-900 p-6"
-      >
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-slate-500">
-              Booking ID
-            </p>
+  const summary = financeData?.summary || {};
+  const monthlyData = financeData?.monthlyData || [];
+  const mechanicBreakdown =
+    financeData?.mechanicBreakdown || [];
+  const recentTransactions =
+    financeData?.recentTransactions || [];
+  const awaitingPayments =
+    financeData?.awaitingPayments || [];
 
-            <h4 className="mt-1 text-lg font-bold">
-              {booking.bookingId}
-            </h4>
-
-            <span
-              className={`mt-3 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${getStatusStyle(
-                booking.status
-              )}`}
-            >
-              {booking.status}
-            </span>
-          </div>
-
-          <div className="text-left lg:text-right">
-            <p className="text-sm text-slate-400">
-              Customer
-            </p>
-
-            <p className="font-semibold">
-              {booking.customer?.name}
-            </p>
-
-            <p className="text-sm text-slate-500">
-              {booking.customer?.email}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <div className="flex gap-3">
-            <Wrench
-              size={20}
-              className="mt-1 shrink-0 text-blue-400"
-            />
-
-            <div>
-              <p className="text-xs text-slate-500">
-                Service
-              </p>
-
-              <p className="font-semibold">
-                {booking.service?.name}
-              </p>
-
-              <p className="text-sm text-slate-400">
-                {formatCurrency(
-                  booking.amount
-                )}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <CarFront
-              size={20}
-              className="mt-1 shrink-0 text-emerald-400"
-            />
-
-            <div>
-              <p className="text-xs text-slate-500">
-                Vehicle
-              </p>
-
-              <p className="font-semibold">
-                {booking.vehicle?.brand}{" "}
-                {booking.vehicle?.model}
-              </p>
-
-              <p className="text-sm text-slate-400">
-                {
-                  booking.vehicle
-                    ?.registrationNumber
-                }
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <MapPin
-              size={20}
-              className="mt-1 shrink-0 text-rose-400"
-            />
-
-            <div>
-              <p className="text-xs text-slate-500">
-                Location
-              </p>
-
-              <p className="font-semibold">
-                {booking.city}
-              </p>
-
-              <p className="text-sm text-slate-400">
-                {booking.address}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs text-slate-500">
-              Scheduled
-            </p>
-
-            <p className="font-semibold">
-              {new Date(
-                booking.scheduledDate
-              ).toLocaleString("en-IN")}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 border-t border-slate-800 pt-6">
-          {booking.mechanic && (
-            <div className="mb-4 rounded-xl border border-purple-500/20 bg-purple-500/10 p-4">
-              <p className="text-sm text-purple-300">
-                Assigned Mechanic
-              </p>
-
-              <p className="mt-1 font-bold">
-                {booking.mechanic.name}
-              </p>
-
-              <p className="text-sm text-slate-400">
-                {booking.mechanic.email}
-              </p>
-            </div>
-          )}
-
-          {!booking.mechanic &&
-            booking.status !== "Cancelled" && (
-              <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
-                <p className="font-semibold text-amber-400">
-                  Mechanic assignment required
-                </p>
-
-                <p className="mt-1 text-sm text-slate-400">
-                  Select an available mechanic
-                  for this booking.
-                </p>
-              </div>
-            )}
-
-          {allowAssignment &&
-            ![
-              "Completed",
-              "Cancelled",
-            ].includes(booking.status) && (
-              <div className="flex flex-col gap-3 md:flex-row">
-                <select
-                  value={
-                    selectedMechanics[
-                      booking._id
-                    ] || ""
-                  }
-                  onChange={(e) =>
-                    handleMechanicChange(
-                      booking._id,
-                      e.target.value
-                    )
-                  }
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-purple-500"
-                >
-                  <option value="">
-                    Select mechanic
-                  </option>
-
-                  {mechanics.map(
-                    (mechanic) => (
-                      <option
-                        key={mechanic._id}
-                        value={mechanic._id}
-                      >
-                        {mechanic.name} -{" "}
-                        {mechanic.email}
-                      </option>
-                    )
-                  )}
-                </select>
-
-                <button
-                  onClick={() =>
-                    handleAssignMechanic(
-                      booking._id
-                    )
-                  }
-                  disabled={
-                    assigningId ===
-                    booking._id
-                  }
-                  className="rounded-lg bg-purple-600 px-5 py-3 font-semibold transition hover:bg-purple-500 disabled:opacity-60"
-                >
-                  {assigningId ===
-                  booking._id
-                    ? "Assigning..."
-                    : booking.mechanic
-                    ? "Reassign Mechanic"
-                    : "Assign Mechanic"}
-                </button>
-              </div>
-            )}
-        </div>
-      </div>
-    );
-  };
+  const yearOptions = Array.from(
+    { length: 5 },
+    (_, index) => currentYear - index
+  );
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-slate-800 bg-slate-900">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-
-          {/* LOGO + BRAND */}
-
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-slate-700 bg-slate-950 shadow-sm">
+            <div className="grid h-12 w-12 place-items-center rounded-xl border border-slate-700 bg-slate-950">
               <img
                 src="/logo.svg"
                 alt="Instant Mechanic Logo"
@@ -440,15 +139,15 @@ export default function AdminDashboard() {
             </div>
 
             <div>
-              <h1 className="text-lg font-bold leading-tight sm:text-xl">
+              <h1 className="text-lg font-bold sm:text-xl">
                 Instant{" "}
                 <span className="text-blue-400">
                   Mechanic
                 </span>
               </h1>
 
-              <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">
-                Admin Dashboard
+              <p className="text-xs text-slate-400 sm:text-sm">
+                Financial Analytics
               </p>
             </div>
           </div>
@@ -458,7 +157,6 @@ export default function AdminDashboard() {
               <p className="text-sm font-semibold">
                 {user?.name}
               </p>
-
               <p className="text-xs text-slate-400">
                 Administrator
               </p>
@@ -475,269 +173,562 @@ export default function AdminDashboard() {
       </header>
 
       <main className="mx-auto max-w-7xl px-6 py-10">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="font-medium text-purple-400">
-              Operations Portal
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-400 transition hover:text-white"
+            >
+              <ArrowLeft size={18} />
+              Back to Dashboard
+            </button>
+
+            <p className="font-medium text-emerald-400">
+              Finance Center
             </p>
 
             <h2 className="mt-2 text-3xl font-bold">
-              Admin Control Center
+              Financial Analytics
             </h2>
 
             <p className="mt-2 max-w-2xl text-slate-400">
-              Manage customer bookings,
-              mechanic assignments and
-              roadside assistance operations.
+              Revenue, mechanic earnings, platform profit,
+              customer payments and mechanic settlements.
             </p>
           </div>
 
-          <button
-            onClick={() =>
-              navigate("/admin/finance")
-            }
-            className="group inline-flex items-center justify-center gap-3 rounded-xl bg-emerald-600 px-5 py-3 font-semibold transition hover:bg-emerald-500"
-          >
-            <TrendingUp size={20} />
+          <div>
+            <label className="mb-2 block text-sm text-slate-400">
+              Financial Year
+            </label>
 
-            Financial Analytics
-
-            <ArrowRight
-              size={18}
-              className="transition-transform group-hover:translate-x-1"
-            />
-          </button>
-        </div>
-
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <ClipboardList className="text-blue-400" />
-
-            <p className="mt-5 text-sm text-slate-400">
-              Total Bookings
-            </p>
-
-            <h3 className="mt-2 text-3xl font-bold">
-              {loading
-                ? "..."
-                : totalBookings}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <Clock3 className="text-amber-400" />
-
-            <p className="mt-5 text-sm text-slate-400">
-              Pending
-            </p>
-
-            <h3 className="mt-2 text-3xl font-bold">
-              {loading
-                ? "..."
-                : pendingBookings}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <UserRoundCheck className="text-purple-400" />
-
-            <p className="mt-5 text-sm text-slate-400">
-              Active / Assigned
-            </p>
-
-            <h3 className="mt-2 text-3xl font-bold">
-              {loading
-                ? "..."
-                : activeBookings}
-            </h3>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <CheckCircle2 className="text-emerald-400" />
-
-            <p className="mt-5 text-sm text-slate-400">
-              Completed
-            </p>
-
-            <h3 className="mt-2 text-3xl font-bold">
-              {loading
-                ? "..."
-                : completedBookings}
-            </h3>
-          </div>
-        </div>
-
-        <div
-          onClick={() =>
-            navigate("/admin/finance")
-          }
-          className="group mt-8 cursor-pointer rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/10 to-slate-900 p-6 transition hover:border-emerald-500/40"
-        >
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="grid h-12 w-12 place-items-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                <WalletCards size={24} />
-              </div>
-
-              <div>
-                <h3 className="text-xl font-bold">
-                  Financial Analytics
-                </h3>
-
-                <p className="mt-1 text-sm text-slate-400">
-                  Revenue, profit, mechanic
-                  earnings and payment
-                  settlements.
-                </p>
-              </div>
-            </div>
-
-            <div className="inline-flex items-center gap-2 font-semibold text-emerald-400">
-              Open Finance Center
-
-              <ArrowRight size={18} />
-            </div>
+            <select
+              value={year}
+              onChange={(e) =>
+                setYear(Number(e.target.value))
+              }
+              className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 font-semibold text-white outline-none focus:border-emerald-500"
+            >
+              {yearOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         {loading && (
-          <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
-            Loading admin dashboard...
+          <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
+            Loading financial analytics...
           </div>
         )}
 
         {error && (
-          <div className="mt-10 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-400">
+          <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 text-red-400">
             {error}
           </div>
         )}
 
         {!loading && !error && (
           <>
-            <section className="mt-12">
-              <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="text-amber-400" />
+            <section className="mt-8">
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                <FinanceCard
+                  icon={
+                    <Wrench className="text-blue-400" />
+                  }
+                  label="Completed Services"
+                  value={summary.completedServices || 0}
+                />
 
-                    <h3 className="text-2xl font-bold">
-                      Unassigned Bookings
-                    </h3>
-                  </div>
+                <FinanceCard
+                  icon={
+                    <CheckCircle2 className="text-emerald-400" />
+                  }
+                  label="Paid Services"
+                  value={summary.paidServices || 0}
+                />
 
-                  <p className="mt-2 text-sm text-slate-400">
-                    Customer bookings that are
-                    waiting for a mechanic
-                    assignment.
-                  </p>
-                </div>
+                <FinanceCard
+                  icon={
+                    <Clock3 className="text-amber-400" />
+                  }
+                  label="Awaiting Payments"
+                  value={
+                    summary.awaitingPaymentServices || 0
+                  }
+                />
 
-                <span className="w-fit rounded-full bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-400">
-                  {unassignedBookings.length}{" "}
-                  Unassigned
-                </span>
-              </div>
-
-              {unassignedBookings.length ===
-              0 ? (
-                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center">
-                  <CheckCircle2
-                    size={36}
-                    className="mx-auto text-emerald-400"
-                  />
-
-                  <h4 className="mt-3 font-bold">
-                    All bookings assigned
-                  </h4>
-
-                  <p className="mt-1 text-sm text-slate-400">
-                    There are currently no
-                    bookings waiting for a
-                    mechanic assignment.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {unassignedBookings.map(
-                    (booking) =>
-                      renderBookingCard(
-                        booking,
-                        true
-                      )
+                <FinanceCard
+                  icon={
+                    <CreditCard className="text-rose-400" />
+                  }
+                  label="Outstanding Customer Payment"
+                  value={formatCurrency(
+                    summary.awaitingPaymentAmount
                   )}
-                </div>
-              )}
+                />
+              </div>
             </section>
 
-            <section className="mt-12 border-t border-slate-800 pt-10">
-              <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
+            <section className="mt-8">
+              <h3 className="mb-5 text-2xl font-bold">
+                Revenue Overview
+              </h3>
+
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                <FinanceCard
+                  icon={
+                    <IndianRupee className="text-emerald-400" />
+                  }
+                  label="Customer Revenue"
+                  value={formatCurrency(
+                    summary.totalRevenue
+                  )}
+                />
+
+                <FinanceCard
+                  icon={
                     <Users className="text-purple-400" />
+                  }
+                  label="Mechanic Earnings"
+                  value={formatCurrency(
+                    summary.totalMechanicEarnings
+                  )}
+                />
 
-                    <h3 className="text-2xl font-bold">
-                      Assigned Service Requests
-                    </h3>
-                  </div>
+                <FinanceCard
+                  icon={
+                    <WalletCards className="text-cyan-400" />
+                  }
+                  label="Paid to Mechanics"
+                  value={formatCurrency(
+                    summary.totalPaidToMechanics
+                  )}
+                />
 
-                  <p className="mt-2 text-sm text-slate-400">
-                    Service requests that
-                    already have an assigned
-                    mechanic.
-                  </p>
-                </div>
+                <FinanceCard
+                  icon={
+                    <Clock3 className="text-orange-400" />
+                  }
+                  label="Pending Mechanic Payout"
+                  value={formatCurrency(
+                    summary.totalPendingMechanicPayout
+                  )}
+                />
 
-                <span className="w-fit rounded-full bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-400">
-                  {assignedBookings.length}{" "}
-                  Assigned
-                </span>
+                <FinanceCard
+                  icon={
+                    <TrendingUp className="text-blue-400" />
+                  }
+                  label="Platform Gross Profit"
+                  value={formatCurrency(
+                    summary.platformGrossProfit
+                  )}
+                />
+
+                <FinanceCard
+                  icon={
+                    <CreditCard className="text-amber-400" />
+                  }
+                  label="Gateway Fees"
+                  value={formatCurrency(
+                    summary.paymentGatewayFees
+                  )}
+                />
+
+                <FinanceCard
+                  icon={
+                    <TrendingUp className="text-emerald-400" />
+                  }
+                  label="Platform Net Profit"
+                  value={formatCurrency(
+                    summary.platformNetProfit
+                  )}
+                />
+
+                <FinanceCard
+                  icon={
+                    <CheckCircle2 className="text-violet-400" />
+                  }
+                  label="Settled Payouts"
+                  value={summary.paidPayoutCount || 0}
+                />
+              </div>
+            </section>
+
+            <section className="mt-10 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold">
+                  Monthly Revenue & Profit
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  Financial performance for {year}.
+                </p>
               </div>
 
-              {assignedBookings.length ===
-              0 ? (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
-                  No assigned service requests
-                  found.
-                </div>
+              <div className="h-[360px]">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#334155"
+                    />
+                    <XAxis
+                      dataKey="month"
+                      stroke="#94a3b8"
+                    />
+                    <YAxis stroke="#94a3b8" />
+                    <Tooltip
+                      formatter={(value) =>
+                        formatCurrency(value)
+                      }
+                      contentStyle={{
+                        backgroundColor: "#0f172a",
+                        border: "1px solid #334155",
+                        borderRadius: "12px",
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="revenue"
+                      name="Revenue"
+                      fill="#10b981"
+                    />
+                    <Bar
+                      dataKey="netProfit"
+                      name="Net Profit"
+                      fill="#3b82f6"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+
+            <section className="mt-10">
+              <div className="mb-5">
+                <h3 className="text-2xl font-bold">
+                  Mechanic Financial Breakdown
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  Earnings and settlement status for each
+                  mechanic.
+                </p>
+              </div>
+
+              {mechanicBreakdown.length === 0 ? (
+                <EmptyState text="No mechanic financial data found." />
               ) : (
-                <div className="space-y-5">
-                  {assignedBookings.map(
-                    (booking) =>
-                      renderBookingCard(
-                        booking,
-                        true
-                      )
-                  )}
+                <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                  <table className="min-w-full bg-slate-900 text-sm">
+                    <thead className="bg-slate-800/70 text-left text-slate-300">
+                      <tr>
+                        <th className="px-5 py-4">
+                          Mechanic
+                        </th>
+                        <th className="px-5 py-4">
+                          Paid Services
+                        </th>
+                        <th className="px-5 py-4">
+                          Revenue
+                        </th>
+                        <th className="px-5 py-4">
+                          Earnings
+                        </th>
+                        <th className="px-5 py-4">
+                          Paid
+                        </th>
+                        <th className="px-5 py-4">
+                          Pending
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {mechanicBreakdown.map(
+                        (mechanic) => (
+                          <tr
+                            key={mechanic.mechanicId}
+                            className="border-t border-slate-800"
+                          >
+                            <td className="px-5 py-4">
+                              <p className="font-semibold">
+                                {mechanic.name}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {mechanic.email}
+                              </p>
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {
+                                mechanic.completedPaidServices
+                              }
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {formatCurrency(
+                                mechanic.customerRevenue
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {formatCurrency(
+                                mechanic.totalEarnings
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4 text-emerald-400">
+                              {formatCurrency(
+                                mechanic.paidAmount
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4 text-amber-400">
+                              {formatCurrency(
+                                mechanic.pendingAmount
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </section>
 
-            {cancelledBookings.length > 0 && (
-              <section className="mt-12 border-t border-slate-800 pt-10">
-                <h3 className="text-xl font-bold text-slate-400">
-                  Cancelled Bookings
+            <section className="mt-10">
+              <div className="mb-5">
+                <h3 className="text-2xl font-bold">
+                  Recent Paid Transactions
                 </h3>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  Customer bookings that were
-                  cancelled before mechanic
-                  assignment.
+                <p className="mt-1 text-sm text-slate-400">
+                  Successful customer payments and mechanic
+                  payout status.
                 </p>
+              </div>
 
-                <div className="mt-5 space-y-5">
-                  {cancelledBookings.map(
-                    (booking) =>
-                      renderBookingCard(
-                        booking,
-                        false
-                      )
-                  )}
+              {recentTransactions.length === 0 ? (
+                <EmptyState text="No paid transactions found." />
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                  <table className="min-w-full bg-slate-900 text-sm">
+                    <thead className="bg-slate-800/70 text-left text-slate-300">
+                      <tr>
+                        <th className="px-5 py-4">
+                          Booking
+                        </th>
+                        <th className="px-5 py-4">
+                          Mechanic
+                        </th>
+                        <th className="px-5 py-4">
+                          Customer Paid
+                        </th>
+                        <th className="px-5 py-4">
+                          Mechanic Earning
+                        </th>
+                        <th className="px-5 py-4">
+                          Net Profit
+                        </th>
+                        <th className="px-5 py-4">
+                          Payout
+                        </th>
+                        <th className="px-5 py-4">
+                          Date
+                        </th>
+                        <th className="px-5 py-4">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {recentTransactions.map(
+                        (transaction) => (
+                          <tr
+                            key={transaction.id}
+                            className="border-t border-slate-800"
+                          >
+                            <td className="px-5 py-4 font-semibold">
+                              {transaction.bookingId}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {transaction.mechanic?.name ||
+                                "-"}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {formatCurrency(
+                                transaction.customerPaid
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {formatCurrency(
+                                transaction.mechanicEarning
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4 text-emerald-400">
+                              {formatCurrency(
+                                transaction.platformNetProfit
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <span
+                                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                  transaction.payoutStatus ===
+                                  "Paid"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : "bg-amber-500/10 text-amber-400"
+                                }`}
+                              >
+                                {
+                                  transaction.payoutStatus
+                                }
+                              </span>
+                            </td>
+
+                            <td className="px-5 py-4 text-slate-400">
+                              {formatDate(
+                                transaction.paidAt
+                              )}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              {transaction.payoutStatus !==
+                              "Paid" ? (
+                                <button
+                                  onClick={() =>
+                                    handleMarkPayoutPaid(
+                                      transaction.id
+                                    )
+                                  }
+                                  disabled={
+                                    payingBookingId ===
+                                    transaction.id
+                                  }
+                                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold transition hover:bg-emerald-500 disabled:opacity-60"
+                                >
+                                  {payingBookingId ===
+                                  transaction.id
+                                    ? "Updating..."
+                                    : "Mark Paid"}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-slate-500">
+                                  Settled
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              </section>
-            )}
+              )}
+            </section>
+
+            <section className="mt-10">
+              <div className="mb-5">
+                <h3 className="text-2xl font-bold">
+                  Awaiting Customer Payments
+                </h3>
+                <p className="mt-1 text-sm text-slate-400">
+                  Completed services whose customer payment is
+                  still pending or failed.
+                </p>
+              </div>
+
+              {awaitingPayments.length === 0 ? (
+                <EmptyState text="No outstanding customer payments." />
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {awaitingPayments.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="rounded-2xl border border-amber-500/20 bg-slate-900 p-5"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-xs uppercase tracking-wider text-slate-500">
+                            Booking
+                          </p>
+
+                          <h4 className="mt-1 font-bold">
+                            {booking.bookingId}
+                          </h4>
+                        </div>
+
+                        <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">
+                          {booking.paymentStatus}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 flex items-end justify-between gap-4">
+                        <div>
+                          <p className="text-sm text-slate-400">
+                            Mechanic
+                          </p>
+                          <p className="font-semibold">
+                            {booking.mechanic?.name ||
+                              "Not available"}
+                          </p>
+                        </div>
+
+                        <p className="text-xl font-bold text-amber-400">
+                          {formatCurrency(
+                            booking.amount
+                          )}
+                        </p>
+                      </div>
+
+                      <p className="mt-4 text-xs text-slate-500">
+                        Completed:{" "}
+                        {formatDate(
+                          booking.completedAt
+                        )}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+function FinanceCard({ icon, label, value }) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+      {icon}
+
+      <p className="mt-5 text-sm text-slate-400">
+        {label}
+      </p>
+
+      <h3 className="mt-2 text-2xl font-bold">
+        {value}
+      </h3>
+    </div>
+  );
+}
+
+function EmptyState({ text }) {
+  return (
+    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-slate-400">
+      {text}
     </div>
   );
 }
